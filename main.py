@@ -14,6 +14,19 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT)) # Making the scre
 
 
 """ From here we will start making the functions that will be used in main game functions """
+
+def showText(text, color, x, y):
+    screen_text = font.render(text, True, color)
+    SCREEN.blit(screen_text, [x,y])
+
+def drawSnake(screen,color,list,width,height):
+     for x,y in list:
+        pygame.draw.rect(screen, color, (x, y, width, height))
+
+def drawFood(screen,color,x,y,width,height):
+    pygame.draw.rect(screen,color,(x,y,width,height))
+
+
 """ Here we will end making the functions that will be used in main game functions """
 
 """ From here we will start making the main game functions """
@@ -54,73 +67,121 @@ def mainGame():
     global snakeY
     global velocityX
     global velocityY
-
-    foodX = random.randrange(mainGameAreaXLeft,mainGameAreaXRight)
-    foodY = random.randrange(mainGameAreaYTop,mainGameAreaYBottom)
+    global SCORE
+    global highScore
 
     
+    snakeList = []
+    snakeLength = 1
+
+    gameOverBool = False
+
+    foodX = random.randint(mainGameAreaXLeft + 30,mainGameAreaXRight - 30)
+    foodY = random.randint(mainGameAreaYTop + 30,mainGameAreaYBottom - 30)
+    velocityX = 0
+    velocityY = 0
+    backgroundMusic.play()
 
 
     while not EXIT_GAME:
-        
-        for event in pygame.event.get():
 
-            # if user clicks on cross button, close the game
-            if event.type == QUIT or (event.type==KEYDOWN and event.key == K_ESCAPE):
-                # pygame.quit()
-                # sys.exit()
-                EXIT_GAME = True
-            
-            if event.type == KEYDOWN:
-                # The below condition will increase the velocity of the snake when user presses the up key
-                if event.key == K_UP:
-                    velocityX = 0
-                    velocityY = -15
+        if gameOverBool:
+            SCORE = 0
+            backgroundMusic.stop()
+            explodeMusic.play()
+            time.sleep(0.1)
+            snakeX = 120
+            snakeY = 240
+            velocityX =0
+            velocityY = 0
+            gameOver()
 
-                # The below condition will increase the velocity of the snake when user presses the down key
-                elif event.key == K_DOWN:
-                    velocityX = 0
-                    velocityY = 15
+        else:        
+            for event in pygame.event.get():
+
+                # if user clicks on cross button, close the game
+                if event.type == QUIT or (event.type==KEYDOWN and event.key == K_ESCAPE):
+                    # pygame.quit()
+                    # sys.exit()
+                    EXIT_GAME = True
                 
-                # The below condition will increase the velocity of the snake when user presses the up key
-                elif event.key == K_RIGHT:
-                    velocityX = 15
-                    velocityY = 0
+                if event.type == KEYDOWN:
+                    # The below condition will increase the velocity of the snake when user presses the up key
+                    if event.key == K_UP:
+                        velocityX = 0
+                        velocityY = -2
 
-                # The below condition will increase the velocity of the snake when user presses the up key
-                elif event.key == K_LEFT:
-                    velocityX = -15
-                    velocityY = 0
+                    # The below condition will increase the velocity of the snake when user presses the down key
+                    elif event.key == K_DOWN:
+                        velocityX = 0
+                        velocityY = 2
+                    
+                    # The below condition will increase the velocity of the snake when user presses the up key
+                    elif event.key == K_RIGHT:
+                        velocityX = 2
+                        velocityY = 0
+
+                    # The below condition will increase the velocity of the snake when user presses the up key
+                    elif event.key == K_LEFT:
+                        velocityX = -2
+                        velocityY = 0
+                    
+                    elif event.key == K_SPACE:
+                        pauseGame()
+
         snakeX += velocityX
-        time.sleep(0.03)
+        # time.sleep(0.03)
         snakeY += velocityY
-        time.sleep(0.03)
+        # time.sleep(0.03)
+
+        if abs(snakeX - foodX)<9 and abs(snakeY - foodY)<9:
+            foodX = random.randint(mainGameAreaXLeft + 30,mainGameAreaXRight - 30)
+            foodY = random.randint(mainGameAreaYTop + 30,mainGameAreaYBottom - 30)
+            SCORE += 10
+            snakeLength += 5
+
+            
+        
+        if abs(snakeX - mainGameAreaXLeft)<15 or abs(snakeX - mainGameAreaXRight)<15 or abs(snakeY - mainGameAreaYTop)<10 or abs(snakeY - mainGameAreaYBottom)<20:
+            gameOverBool = True
+
+        head = []
+        head.append(snakeX)
+        head.append(snakeY)
+        snakeList.append(head)
+
+        if len(snakeList)>snakeLength:
+            del snakeList[0]
+
+        if head in snakeList[:-1]:
+            gameOverBool = True
+            print("Snake collided with itself")
+        
+
+        
+
+        
+
+        
 
         
             
-
+        scoreScreen = f"Score : {SCORE}"
 
         SCREEN.blit(mainGameImage,(0,0))
-        pygame.draw.rect(SCREEN,red,(foodX,foodY,foodWidth,foodHeight))
+        drawFood(SCREEN, red, foodX, foodY, foodWidth, foodHeight)
+        showText(scoreScreen, red, 12, 12)
         # From here we will start making the snake
-        pygame.draw.rect(SCREEN,black,(snakeX,snakeY,snakeWidth,snakeHeight))
+        drawSnake(SCREEN, black, snakeList , snakeWidth, snakeHeight)
         pygame.display.update()
         # snakeX += velocityX
         # snakeY += velocityY
         # pygame.display.update()
+        
 
                 
 
         """ From here we will start the making the random food """
-
-                # # Creating random coordinates for the area
-                
-                # foodX = random.randrange(mainGameAreaXLeft,mainGameAreaXRight)
-                # foodY = random.randrange(mainGameAreaYTop,mainGameAreaYBottom)
-
-                # pygame.draw.rect(SCREEN,red,(foodX,foodY,foodWidth,foodHeight))
-                # pygame.display.update()
-        
         
     
     FPSCLOCK.tick(FPS)
@@ -141,7 +202,22 @@ def pauseGame():
             if event.type == QUIT or (event.type==KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-
+            elif event.type == KEYDOWN:
+                if event.key == K_BACKSPACE:
+                    mainGame()
+                
+                elif event.key == K_SPACE:
+                    welcomeScreen()
+                
+                elif event.key == K_RETURN:
+                    SCORE = 0
+                    time.sleep(0.1)
+                    snakeX = 120
+                    snakeY = 240
+                    velocityX =0
+                    velocityY = 0
+                    gameOver()
+                
             else:
                 SCREEN.blit(pauseImage,(0,0))
                 pygame.display.update()
@@ -153,6 +229,13 @@ def gameOver():
             if event.type == QUIT or (event.type==KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
+            
+            elif event.type == KEYDOWN:
+                if event.key == K_RETURN:
+                    mainGame()
+                
+                elif event.key == K_SPACE:
+                    welcomeScreen()
 
             else:
                 SCREEN.blit(gameOverImage,(0,0))
@@ -183,6 +266,10 @@ if __name__ == '__main__':
     pygame.init() # Initialize all pygame's modules
     FPSCLOCK = pygame.time.Clock()
     pygame.display.set_caption('Snakes Game') # Setting the title
+    SCORE = 0
+    high_score_list = [0]
+    highScore = high_score_list[0]
+    font = pygame.font.SysFont(None, 55)
 
 
     """ From here we will start to make variables of colors """
@@ -210,6 +297,11 @@ if __name__ == '__main__':
 
     mainGameAreaYTop = 53
     mainGameAreaYBottom = 540
+
+    """ Music game variables """
+    backgroundMusic = pygame.mixer.Sound('gallery/audio/background.mp3')
+    beepMusic = pygame.mixer.Sound('gallery/audio/beep.mp3')
+    explodeMusic = pygame.mixer.Sound('gallery/audio/explode.mp3')
 
 
 
